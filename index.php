@@ -1,18 +1,11 @@
 <?php 
 //TORI Map
-<<<<<<< HEAD
 //tori_map_template.php
-=======
->>>>>>> remotes/origin/master
 //================== Description ============================
 //1、使用leaflet；顯示至少兩種以上的basemap
 //2、測試從Remote DB撈出資料包裝成GeoJSON，產生Marker on the layer
 //3、Marker可以顯示圖檔
-<<<<<<< HEAD
 // Reference: http://fontawesome.io/icons/ 
-=======
-
->>>>>>> remotes/origin/master
 //================== connect to database ======================================
      ini_set('date.timezone','Asia/Taipei');
 	 include_once("IHMT_DB_remote.php");
@@ -29,17 +22,13 @@ $SID=mysql_result($rt_wind_data, $j, "Station_ID");
 //echo $SID; 
 
 }
-<<<<<<< HEAD
 $station_no=1;
-=======
->>>>>>> remotes/origin/master
 ?>
 
 <html>
 <head>
   <title>A TORI Map Testing!</title>
   <meta http-equiv="content-type" content="text/html; charset=utf-8"/>
-<<<<<<< HEAD
    <link rel="shortcut icon" type="image/x-icon" href="images/tori.ico">
 
 
@@ -96,21 +85,6 @@ $station_no=1;
         <button type="button" id="Off_image" class="btn btn-danger">OFF image</button>
     </div>
 
-=======
-<script src="http://code.jquery.com/jquery-1.11.3.min.js"></script>
-<link rel="stylesheet" href="leaflet/leaflet.css" />
- <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.1.0/dist/dist/MarkerCluster.css"/> 
-  <script src="https://unpkg.com/leaflet.markercluster@1.1.0/dist/leaflet.markercluster.js"></script> 
-  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.1.0/dist/MarkerCluster.Default.css">
-  <script src="https://unpkg.com/leaflet.markercluster@1.1.0/dist/leaflet.markercluster-src.js"></script>
-<script src="leaflet/leaflet.js"></script>
-  <style>
-    #map{ height: 100% }
-  </style>
-</head>
-<body>
-<div id="show_location"></div>
->>>>>>> remotes/origin/master
   <div id="map"></div>
 
   <script>
@@ -119,14 +93,9 @@ $station_no=1;
 //===============OpenStreetMap 
 	var OpenStreetMap =L.tileLayer('http://{s}.tile.osm.org/{z}/{x}/{y}.png', {
     attribution: '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors,Data by <a href="http://www.tori.org.tw/">TORI</a>',
-<<<<<<< HEAD
       maxZoom: 18
 	  //,minZoom: 8
       
-=======
-      maxZoom: 18,
-      minZoom: 8
->>>>>>> remotes/origin/master
 });
 //===============Esri_WorldStreetMap
 var Esri_WorldStreetMap = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', {
@@ -149,11 +118,7 @@ var baseMaps = {
 	"Esri_OceanBasemap": Esri_OceanBasemap,
 	"Esri_WorldStreetMap": Esri_WorldStreetMap
 };
-<<<<<<< HEAD
 //============== Setting map basic parameters include(points of center ,initial zoom size,initial layer map)==============
-=======
-//============== Setting map basic parameters include(center points,initial zoom size)==============
->>>>>>> remotes/origin/master
 	//var map = L.map('map').setView([22.993013, 120.233937], 10);
 	    var map = L.map('map', {
     center: [22.993013, 120.233937],
@@ -162,7 +127,6 @@ var baseMaps = {
 });
 
 //============ Setting Map bounder area =====================
-<<<<<<< HEAD
 var bounds = [[21, 118], [26, 123]]; //[latitude,longitude]
 
 map.fitBounds(bounds);
@@ -181,18 +145,6 @@ L.marker([22.632043136488733, 120.28491981538909], {icon: myIcon}).addTo(map) //
 	
 // ========= plot maker from remote database IHMT and plot them on the map ===========================
 
-=======
-var bounds = [[21, 118], [26, 123]];
-
-map.fitBounds(bounds);
-//=========== 新增 control layers =============================
-var controlLayers = L.control.layers(baseMaps).addTo(map);
-// ======== TORI maker ======================
-L.marker([22.632043136488733, 120.28491981538909]).addTo(map) //the point of TORI Location
-    .bindPopup('<a href="http://www.tori.org.tw/">TORI</a>.<br> Narlabs. Kaohsiung')
-	
- // ========= plot maker on the map ===========================
->>>>>>> remotes/origin/master
  //var controlLayers = L.control.layers().addTo(map);
 $.getJSON("PHP_to_geoJSON.php",function(data){
     var buoyIcon = L.icon({
@@ -206,7 +158,6 @@ $.getJSON("PHP_to_geoJSON.php",function(data){
   return marker; 
 	 // return L.marker(latlng,{icon: buoyIcon});
     }
-<<<<<<< HEAD
   }  );//.addTo(map);不事先加入 initial display
 
   controlLayers.addOverlay(rodents, 'IHMT_Stations');
@@ -238,21 +189,12 @@ toggle1.addTo(map);
 //=============== plot circle 測試如何顯示 json  ===============
     var popup_json = L.popup().setContent('<p style="font-size:130%;"><b>Some Name</b></p><div id="container" style="min-width: 300px; height: 200px; margin: 0 auto">Loading...</div>');
 
-=======
-  }  ).addTo(map);
-  controlLayers.addOverlay(rodents, 'Stations');
-});
-
-
-//=============== circle ===============
->>>>>>> remotes/origin/master
 var circle = L.circle([22.63204313648, 120.2849198153], {
     color: 'red',
     fillColor: '#f03',
     fillOpacity: 0.5,
     radius: 500
 }).addTo(map);
-<<<<<<< HEAD
 circle.bindPopup(popup_json);
 
 //circle.bindPopup("TORI nearby circle.");
@@ -275,28 +217,18 @@ circle.bindPopup(popup_json);
       $('#container').html("Loading...");
     });
 //=============== Show mouse click location 抓取顯示位置===============
-=======
-
-circle.bindPopup("TORI nearby circle.");
-//=============== Show mouse click location ===============
->>>>>>> remotes/origin/master
 var popup = L.popup();
 
 function onMapClick(e) {
     popup
         .setLatLng(e.latlng)
         .setContent("You clicked the map at " + e.latlng.toString())
-<<<<<<< HEAD
         //.openOn(map); //Do not show point location on popup window
-=======
-        .openOn(map);
->>>>>>> remotes/origin/master
 		document.getElementById("show_location").innerHTML = "Welcome to TORI MAP!"+e.latlng.toString();
 }
 
 map.on('click', onMapClick);
 document.getElementById("show_location").innerHTML = "Welcome to TORI MAP!";
-<<<<<<< HEAD
 
 //===========  load GeoJSON from an external file (WRA Databse)==============================
 
@@ -688,36 +620,5 @@ stateChangingButton.addTo(map);
     } */
   </script>
 
-=======
- // load GeoJSON from an external file
-
-
-
-
-
-
-// ========= plot maker2 on the map ===========================
-
- $.getJSON("PHP_to_geoJSON_tide.php",function(data){
-    var torosIcon = L.icon({
-    iconUrl: 'images/map_toros_yes.png',
-    iconSize: [20,30]
-  }); 
-  var rodents2 =L.geoJson(data  ,{
-    pointToLayer: function(feature,latlng){
-	var marker = L.marker(latlng,{icon: torosIcon});
-	marker.bindPopup(feature.properties.CNname +"("+feature.properties.Latitude+','+feature.properties.Longitude+')' + '<br/>' + feature.properties.SID);
-  return marker; 
-	 // return L.marker(latlng,{icon: buoyIcon});
-    }
-  }  ).addTo(map);
-  controlLayers.addOverlay(rodents2, 'Stations_2');
-}); 
-
-var clusters = L.markerClusterGroup();
-clusters.addLayer(rodents);
-map.addLayer(clusters); 
-  </script>
->>>>>>> remotes/origin/master
 </body>
 </html>
