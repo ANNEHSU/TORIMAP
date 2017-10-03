@@ -140,10 +140,10 @@ var myIcon = L.icon({
     .bindPopup('<a href="http://www.tori.org.tw/">TORI</a>.<br> Narlabs. Kaohsiung') */
 
 var tori_description='<div class="padding20"><ul class="maplist"><li><img src="images/pos_01.jpg" alt="高雄總部"></li><li><strong>高雄總部</strong></li><li><span class="colorG">地　　址</span><br> 801 高雄市前金區河南二路196號</li><li><span class="colorG">聯絡資訊</span><br> 電話：07- 2618688<br> 傳真：07- 2618703</li></ul></div>';
-var tori_marker=L.marker([22.632043136488733, 120.28491981538909], {icon: myIcon});//.addTo(map) //the point of TORI Location
-    tori_marker.bindPopup(tori_description+'<a href="http://www.tori.org.tw/">TORI</a>.<br> Narlabs. Kaohsiung')
-	controlLayers.addOverlay(tori_marker, 'About TORI');
-
+var tori_marker=L.marker([22.63259, 120.2882], {icon: myIcon});//.addTo(map) //the point of TORI Location
+var	tori_popup = L.popup({minWidth : 300,maxHeight : 320}).setContent(tori_description+'<a href="http://www.tori.org.tw/">TORI</a>.<br> Narlabs. Kaohsiung');    
+	tori_marker.bindPopup(tori_popup);
+	controlLayers.addOverlay(tori_marker, 'tori_marker');
 //---------------- using easy button   ---------------
  var add_tori_location = L.easyButton({
   states: [{
@@ -722,7 +722,7 @@ toggle.addTo(map);
 
 // end getjson2
 
-
+// add mesure icon
 	L.control.scale(baseMaps).addTo(map);
 L.control.polylineMeasure(baseMaps).addTo(map);  	
 
