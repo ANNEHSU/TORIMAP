@@ -1,6 +1,7 @@
 <?php 
 //TORI Map
-//tori_map_template.php
+//tori_map_template_lastversion.php
+//此版本放置刪除多餘code==>完成後覆蓋index.php
 //================== Description ============================
 //1、使用leaflet；顯示至少兩種以上的basemap
 //2、測試從Remote DB撈出資料包裝成GeoJSON，產生Marker on the layer
@@ -9,9 +10,12 @@
 //================== connect to database ======================================
      ini_set('date.timezone','Asia/Taipei');
 	 include_once("IHMT_DB_remote.php");
+	 include_once('CWB_remote_server.php');
 	 mysql_query("set names 'utf8'");
   //include_once("IHMT_DB.php");
 //include_once("IHMT_DB_in81.php");//IHMT_DB_remote.php
+	
+
 /*======================================================================
 Leaflet's default projection is EPSG:3857,Leaflet's default projection is EPSG:3857, 
 also known as "Google Mercator" or "Web Mercator" and sometimes designated with the number "900913". 
@@ -45,7 +49,8 @@ This projection is what most slippy tile based maps use, including the common ti
 		 <link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.6.3/css/font-awesome.min.css" rel="stylesheet">
          <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/Leaflet.awesome-markers/2.0.2/leaflet.awesome-markers.css">
          <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css">
-		
+		 <!-- <link href="../CSS/ALL.css" rel="stylesheet" type="text/css" /> -->
+		 
        	<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 		<script src="https://unpkg.com/leaflet.markercluster@1.1.0/dist/leaflet.markercluster.js"></script> 
         <script src="https://ppete2.github.io/Leaflet.PolylineMeasure/Leaflet.PolylineMeasure.js"></script>
@@ -63,6 +68,10 @@ This projection is what most slippy tile based maps use, including the common ti
 <script src="https://cdn.jsdelivr.net/npm/leaflet-easybutton@2/src/easy-button.js"></script>
 
  <script src="https://cdnjs.cloudflare.com/ajax/libs/Leaflet.awesome-markers/2.0.2/leaflet.awesome-markers.js"></script>
+ 
+ <script src="proj4js-master/lib/proj4.js"></script>
+<script src="proj4js-master/lib/proj4leaflet.js"></script>
+ 
 <!--<script src="leaflet/leaflet.js"></script> -->
   <style>
     #map{ height: 90% }
@@ -71,6 +80,14 @@ This projection is what most slippy tile based maps use, including the common ti
     button {
         width: 100px;
     }
+	.easy-button-button {
+  display: block !important;
+}
+
+.tag-filter-tags-container {
+  left: 30px;
+}
+
   </style>
 </head>
 <body>
@@ -89,22 +106,26 @@ This projection is what most slippy tile based maps use, including the common ti
 //===============OpenStreetMap 
 	var OpenStreetMap =L.tileLayer('http://{s}.tile.osm.org/{z}/{x}/{y}.png', {
     attribution: '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors,Data by <a href="http://www.tori.org.tw/">TORI</a>',
+	crs:L.CRS.EPSG4326,
       maxZoom: 18
 	  //,minZoom: 8
       
 });
 //===============Esri_WorldStreetMap
 var Esri_WorldStreetMap = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', {
-	attribution: 'Tiles &copy; Esri &mdash; Source: Esri, DeLorme, NAVTEQ, USGS, Intermap, iPC, NRCAN, Esri Japan, METI, Esri China (Hong Kong), Esri (Thailand), TomTom, 2012'
+	attribution: 'Tiles &copy; Esri &mdash; Source: Esri, DeLorme, NAVTEQ, USGS, Intermap, iPC, NRCAN, Esri Japan, METI, Esri China (Hong Kong), Esri (Thailand), TomTom, 2012',
+	crs:L.CRS.EPSG4326
 });
 
 //=========== Esri_WorldImagery
 var Esri_WorldImagery = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-	attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
+	attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community',
+	crs:L.CRS.EPSG4326
 });
 //========== Esri_OceanBasemap
 var Esri_OceanBasemap = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Ocean_Basemap/MapServer/tile/{z}/{y}/{x}', {
 	attribution: 'Tiles &copy; Esri &mdash; Sources: GEBCO, NOAA, CHS, OSU, UNH, CSUMB, National Geographic, DeLorme, NAVTEQ, and Esri',
+	crs:L.CRS.EPSG4326,
 	maxZoom: 18
 });
 //========== 將所有map放入同一個控制項內
@@ -115,12 +136,13 @@ var baseMaps = {
 	"OpenStreetMap": OpenStreetMap
 };
 //============== Setting map basic parameters include(points of center ,initial zoom size,initial layer map)==============
-	//var map = L.map('map').setView([22.993013, 120.233937], 10);
+
 	    var map = L.map('map', {
+	
     center: [22.993013, 120.233937],
     zoom: 10,
     layers: [Esri_WorldImagery] //setting initial map layer
-});
+}); 
 
 //============ Setting Map bounder area =====================
 var bounds = [[21, 118], [26, 123]]; //[latitude,longitude]
@@ -139,11 +161,13 @@ var myIcon = L.icon({
 /* L.marker([22.632043136488733, 120.28491981538909], {icon: myIcon}).addTo(map) //the point of TORI Location
     .bindPopup('<a href="http://www.tori.org.tw/">TORI</a>.<br> Narlabs. Kaohsiung') */
 
+ 
 var tori_description='<div class="padding20"><ul class="maplist"><li><img src="images/pos_01.jpg" alt="高雄總部"></li><li><strong>高雄總部</strong></li><li><span class="colorG">地　　址</span><br> 801 高雄市前金區河南二路196號</li><li><span class="colorG">聯絡資訊</span><br> 電話：07- 2618688<br> 傳真：07- 2618703</li></ul></div>';
 var tori_marker=L.marker([22.63259, 120.2882], {icon: myIcon});//.addTo(map) //the point of TORI Location
 var	tori_popup = L.popup({minWidth : 300,maxHeight : 320}).setContent(tori_description+'<a href="http://www.tori.org.tw/">TORI</a>.<br> Narlabs. Kaohsiung');    
 	tori_marker.bindPopup(tori_popup);
-	controlLayers.addOverlay(tori_marker, 'tori_marker');
+	controlLayers.addOverlay(tori_marker, 'About Tori');
+
 //---------------- using easy button   ---------------
  var add_tori_location = L.easyButton({
   states: [{
@@ -165,24 +189,29 @@ var	tori_popup = L.popup({minWidth : 300,maxHeight : 320}).setContent(tori_descr
   }]
 });
 add_tori_location.addTo(map);
- //-----------	 end add TORI icon
+ //-----------	
+	
+//=========== end TORI marker	
 
 // ========= plot maker from remote database IHMT and plot them on the map ===========================
 
 //var controlLayers = L.control.layers().addTo(map);
 $.getJSON("PHP_to_geoJSON.php",function(data){
-    /* var buoyIcon = L.icon({
+	
+   /*  var buoyIcon = L.icon({
     iconUrl: 'images/map_buoy_yes.png',
     iconSize: [20,30]
   });  */
-   var IHMTIcon = L.AwesomeMarkers.icon({
+<!-- Using awesome marker  -->
+  var IHMTIcon = L.AwesomeMarkers.icon({
         prefix: 'fa', //font awesome rather than bootstrap
         markerColor: 'red', // see colors above
         icon: 'anchor' //http://fortawesome.github.io/Font-Awesome/icons/
     });
+<!-- plot marker on new layer-->
    var rodents =L.geoJson(data  ,{
     pointToLayer: function(feature,latlng){
-	var marker = L.marker(latlng,{icon: IHMTIcon});//buoyIcon
+	var marker = L.marker(latlng,{icon: IHMTIcon,tags:['IHMT']});//buoyIcon
 	marker.bindPopup(feature.properties.CNname +"("+feature.properties.Latitude+','+feature.properties.Longitude+')' + '<br/>' + feature.properties.SID);
   return marker; 
 	 // return L.marker(latlng,{icon: buoyIcon});
@@ -197,21 +226,21 @@ clusters_IHMT.addLayer(rodents);
  var toggle1 = L.easyButton({
   states: [{
     stateName: 'add-markers',
-    icon: 'fa-toggle-on fa-2x',
+    icon: 'fa-anchor fa-2x',
     title: 'IHMT Station',
     onClick: function(control) {
-	map.setView([22.993013, 120.233937],8);
       //map.addLayer(rodents);
+	  map.setView([22.993013, 120.233937],8);
 	  map.addLayer(clusters_IHMT);
       control.state('remove-markers');
     }
   }, {
-    icon: 'fa-toggle-off fa-2x',
+    icon: 'fa-ship fa-2x',
     stateName: 'remove-markers',
     onClick: function(control) {
 		map.setView([22.993013, 120.233937],8);
 		map.removeLayer(clusters_IHMT);
-      //map.removeLayer(rodents); //若使用clusters就需要使用markerClusterGroup
+      //map.removeLayer(rodents); //若使用clusters就需要使用markerClusterGroup;一開始不顯示
       control.state('add-markers');
     },
     title: 'remove IHMT Station'
@@ -221,41 +250,8 @@ toggle1.addTo(map);
  //----------------
 });
 
+// ========= end plot maker from remote database IHMT and plot them on the map ===========================
 
-
-//=============== plot circle 測試如何顯示 json  ===============
-// Using tori location to Plot a circle area 
-//==============================================================
-/*     var popup_json = L.popup().setContent('<p style="font-size:130%;"><b>Some Name</b></p><div id="container" style="min-width: 300px; height: 200px; margin: 0 auto">Loading...</div>');
-
-var circle = L.circle([22.63204313648, 120.2849198153], {
-    color: 'red',
-    fillColor: '#f03',
-    fillOpacity: 0.5,
-    radius: 500
-}).addTo(map);
-circle.bindPopup(popup_json);
-
-//circle.bindPopup("TORI nearby circle.");
-  
-    map.on('popupopen', function(e) {
-      $.ajax({
-          type: "GET",
-          url: "data.json"
-        })
-        .done(function(data) {
-          $('#container').highcharts({
-            chart: {height: 175, width: 295},
-            title: {text: ''},
-            series: data
-          });
-        });
-    });
-    
-    map.on('popupclose', function(e){
-      $('#container').html("Loading...");
-    }); */
-//=============== end plot circle ===============
 //=============== Show mouse click location 抓取顯示位置===============
 var popup = L.popup();
 
@@ -280,36 +276,41 @@ document.getElementById("show_location").innerHTML = "Welcome to TORI MAP!";
  var tempicon;   
  var SID; // record 目前測站參數
  var popup_json2;
+ <!-- Using awesome marker  -->
+  var WRAIcon_buoy = L.AwesomeMarkers.icon({
+        prefix: 'fa', //font awesome rather than bootstrap
+        markerColor: 'purple', // see colors above
+        icon: 'cloud', //http://fortawesome.github.io/Font-Awesome/icons/
+		iconSize: [32,48]
+    }); 
+	var WRAIcon_station = L.AwesomeMarkers.icon({
+        prefix: 'fa', //font awesome rather than bootstrap
+        markerColor: 'orange', // see colors above
+        icon: 'cloud', //http://fortawesome.github.io/Font-Awesome/icons/
+		iconSize: [32,48]
+    });  
   var rodents2 =L.geoJson(data  ,{
     pointToLayer: function(feature,latlng){
+	
 	//========= different type data icon setting ==============	
-			
-		switch(feature.properties.DataType_EN) {	
+	switch(feature.properties.DataType_EN) {	
 		case "buoy":
-			tempicon="images/map_buoy_yes.png";break;
-			// popup_json2 = L.popup({minWidth : 960,maxHeight : 800}).setContent('<p style="font-size:130%;"><b>水利署(WRA)'+feature.properties.CNname+"("+feature.properties.name+','+feature.properties.Latitude+','+feature.properties.Longitude+',SID='+ feature.properties.SID+')' +'</b></p><div id="container_wave1" style="min-width: 800px; height: 600px; margin: 0 auto">Loading...</div><p><div id="container_waveRose1" style="min-width: 500px; height: 500px; margin: 0 auto">Loading...</div>');
- 
-		case "tide":
-			tempicon="images/map_toros_yes.png";break;
-			//popup_json2 =L.popup({minWidth : 960,maxHeight : 800}).setContent(feature.properties.CNname +"("+feature.properties.name+','+feature.properties.Latitude+','+feature.properties.Longitude+')' + '<br/>' + feature.properties.SID+feature.properties.DataType_EN);
-		}
-	//================= setting icon attribution
-	var torosIcon = L.icon({
+			tempicon=WRAIcon_buoy;break;//"images/map_buoy_yes.png";break;
+ 		case "tide":
+			tempicon=WRAIcon_station;break;//"images/map_toros_yes.png";break;
+		}		
 
-	iconUrl: tempicon,
-    iconSize: [32,48]
-  }); 
   //=============== initial version  ===================
   	//var popup_json2 = L.popup({minWidth : 960,maxHeight : 800}).setContent('<p style="font-size:130%;"><b>水利署(WRA)'+feature.properties.CNname+"("+feature.properties.Latitude+','+feature.properties.Longitude+','+ feature.properties.SID+')' +'</b></p><div id="container_wave1" style="min-width: 800px; height: 600px; margin: 0 auto">Loading...</div><p><div id="container_waveRose1" style="min-width: 500px; height: 500px; margin: 0 auto">Loading...</div>');
   //var marker = L.marker(latlng,{icon: torosIcon});
   //============== end initial version  ================
-	var marker = L.marker(latlng,{icon: torosIcon}).on('mouseover', function() {
+	var marker = L.marker(latlng,{icon: tempicon,tags:['WHA']}).on('mouseover', function() {
 		switch(feature.properties.DataType_EN) {	
 		case "buoy":
-			popup_json2 = L.popup({minWidth : 960,maxHeight : 800}).setContent('<p style="font-size:130%;"><b>水利署(WRA)'+feature.properties.CNname+"("+feature.properties.name+','+feature.properties.Latitude+','+feature.properties.Longitude+',SID='+ feature.properties.SID+')' +'</b></p><div id="container_wave1" style="min-width: 800px; height: 600px; margin: 0 auto">Loading...</div><p><div id="container_waveRose1" style="min-width: 500px; height: 500px; margin: 0 auto">Loading...</div><div id="container_curr" style="min-width: 500px; height: 500px; margin: 0 auto">Loading...</div>');break;
+			popup_json2 = L.popup({minWidth : 960,maxHeight : 800}).setContent('<p style="font-size:130%;"><b>水利署(WRA)'+feature.properties.CNname+"("+feature.properties.name+','+feature.properties.Latitude_S+','+feature.properties.Longitude_S+',SID='+ feature.properties.SID+')' +'</b></p><div id="container_wave1" style="min-width: 600px; height: 480px; margin: 0 auto">Loading...</div><p><div id="container_waveRose1" style="min-width: 400px; height: 400px; margin: 0 auto">Loading...</div><div id="container_curr" style="min-width: 400px; height: 400px; margin: 0 auto">Loading...</div><p style="font-size:14px;color:red;">*即時海況監測資料尚未經嚴密品管程序，請參酌使用!!</p><p>資料來源：<a href="https://data.wra.gov.tw/">經濟部水利署-水利資料整合雲平台</a></p>');break;
  
 		case "tide":
-			popup_json2 =L.popup({minWidth : 960,maxHeight : 800}).setContent('<p style="font-size:130%;"><b>水利署(WRA)'+feature.properties.CNname +"("+feature.properties.name+','+feature.properties.Latitude+','+feature.properties.Longitude+',SID=' +feature.properties.SID+')' +'</b></p><div id="container_tide" style="min-width: 800px; height: 600px; margin: 0 auto">Loading...</div>');break;
+			popup_json2 =L.popup({minWidth : 960,maxHeight : 800}).setContent('<p style="font-size:130%;"><b>水利署(WRA)'+feature.properties.CNname +"("+feature.properties.name+','+feature.properties.Latitude_S+','+feature.properties.Longitude_S+',SID=' +feature.properties.SID+')' +'</b></p><div id="container_tide" style="min-width: 600px; height: 480px; margin: 0 auto">Loading...</div> <p style="font-size:14px;color:red;">*即時海況監測資料尚未經嚴密品管程序，請參酌使用!!</p><p>資料來源：<a href="https://data.wra.gov.tw/">經濟部水利署-水利資料整合雲平台</a></p>');break;
 		}
                     this.bindPopup(popup_json2); //show popup information
 					//this.bindPopup(feature.properties.CNname +"("+feature.properties.Latitude+','+feature.properties.Longitude+')' + '<br/>' + feature.properties.SID+feature.properties.DataType_EN).openPopup();
@@ -665,48 +666,45 @@ getAjaxData(SID);
 
 
 //-------------- end waveRose --------------------------
-	map.on('popupclose', function(e){
+	
+				
+  });//map.on('popupopen')
+ //=====================================================				
+			map.on('popupclose', function(e){
       $('#container_wave1').html("Loading...");
 	  $('#container_waveRose1').html("Loading...");
 	  $('#container_curr').html("Loading...");
 	  $('#container_tide').html("Loading...");
-    });			
-				
-  });//end map.on
- //=====================================================				
-				
+    });		
+
+
+//----------------------------------		
 	}); //end L.marker.on('mouseover')
-	
-	//SID=feature.properties.SID;
-	//document.getElementById("show_location").innerHTML = feature.properties.SID;
-	//var popup_json2 = L.popup({minWidth : 960,maxHeight : 800}).setContent('<p style="font-size:130%;"><b>水利署(WRA)'+feature.properties.CNname+"("+feature.properties.Latitude+','+feature.properties.Longitude+','+ feature.properties.SID+')' +'</b></p><div id="container_wave1" style="min-width: 800px; height: 600px; margin: 0 auto">Loading...</div><p><div id="container_waveRose1" style="min-width: 500px; height: 500px; margin: 0 auto">Loading...</div>');
-	//marker.bindPopup(popup_json2);
-	//marker.bindPopup(feature.properties.CNname +"("+feature.properties.Latitude+','+feature.properties.Longitude+')' + '<br/>' + feature.properties.SID+feature.properties.DataType_EN);
+
   return marker; 
-	 // return L.marker(latlng,{icon: buoyIcon});
     } // end pointtolayer
   }  );//.addTo(map);//comment .addTo(map)==>表沒有先加入map ==>initial 會變成 unclick
  var clusters = L.markerClusterGroup();
 clusters.addLayer(rodents2);
-//map.addLayer(clusters); ////若使用clusters就需要使用markerClusterGroup;一開始不顯示
+//map.addLayer(clusters); 
  controlLayers.addOverlay(clusters, 'WRA_Stations');
  
  //---------------- // toggle-on toggle-off easy button on leaflet---------------------
  var toggle = L.easyButton({
   states: [{
     stateName: 'add-markers',
-    icon: 'fa-map-marker fa-2x',
+    icon: 'fa-cloud fa-2x',
     title: 'WRA Station',
     onClick: function(control) {
-	map.setView([22.993013, 120.233937],8);
+	  map.setView([22.993013, 120.233937],8);
       map.addLayer(clusters);
       control.state('remove-markers');
     }
   }, {
-    icon: 'fa-undo fa-2x',
+    icon: 'fa-times fa-2x',
     stateName: 'remove-markers',
     onClick: function(control) {
-	map.setView([22.993013, 120.233937],8);
+	  map.setView([22.993013, 120.233937],8);
       map.removeLayer(clusters);
       control.state('add-markers');
     },
@@ -717,16 +715,518 @@ toggle.addTo(map);
  //---------------------------- end -------------------------------
  
 }); 
-
-
-
 // end getjson2
 
-// add mesure icon
+
+//========================================================================
+
+//================= Adding CWB Sation =====================================
+$.getJSON("PHP_to_geoJSON_CWB.php",function(data){
+ var tempicon;   
+ var SID_CWB; // record 目前測站參數
+ var popup_json_CWB;
+
+
+<!-- plot marker on new layer-->
+   var rodents_cwb =L.geoJson(data  ,{
+    pointToLayer: function(feature,latlng){
+	//========= different type data icon setting ==============	
+			//========= different type data icon setting ==============	
+			
+		switch(feature.properties.DataType_EN) {	
+		case "buoy":
+			tempicon="images/map_buoy_yes.png";break;
+ 
+		case "station":
+			tempicon="images/map_toros_yes.png";break;
+		}
+		
+	//================= setting icon attribution
+ 	var CWBIcon = L.icon({
+
+	iconUrl: tempicon,
+    iconSize: [32,48]
+  }); 	 
+		
+	var marker = L.marker(latlng,{icon: CWBIcon,tags:['CWB']}).on('mouseover', function() {
+		switch(feature.properties.DataType_EN) {	
+		case "buoy":
+			popup_json_CWB = L.popup({minWidth : 960,maxHeight : 800}).setContent('<p style="font-size:130%;"><b>氣象局(CWB)'+feature.properties.CNname+"("+feature.properties.name+','+feature.properties.Latitude+','+feature.properties.Longitude+',SID='+ feature.properties.SID+')' +'</b></p><div id="CWB_container_WIND" style="min-width: 400px; height: 400px; margin: 0 auto">Loading...</div><div id="CWB_container_WAVE" style="min-width: 400px; height: 400px; margin: 0 auto">Loading...</div><div id="container_3params" style="min-width: 400px; height: 300px; margin: 0 auto">Loading...</div><p style="font-size:14px;color:red;">*即時海況監測資料尚未經嚴密品管程序，請參酌使用!!</p><p style="font-size:14px;color:red;">補充：負值(除溫度外)表示該時刻因故無資料；溫度<-90表示該時刻因故無資料</p><p>資料來源：<a href="http://opendata.cwb.gov.tw/index">交通部中央氣象局-開放資料平臺</a></p>');break;
+ 
+		case "station":
+			popup_json_CWB =L.popup({minWidth : 960,maxHeight : 800}).setContent('<p style="font-size:130%;"><b>氣象局(CWB)'+feature.properties.CNname +"("+feature.properties.name+','+feature.properties.Latitude+','+feature.properties.Longitude+',SID=' +feature.properties.SID+')' +'</b></p><div id="CWB_container_Tide" style="min-width: 400px; height: 300px; margin: 0 auto">Loading...</div><div id="CWB_container_SST" style="min-width: 400px; height: 300px; margin: 0 auto">Loading...</div><p style="font-size:14px;color:red;">*即時海況監測資料尚未經嚴密品管程序，請參酌使用!!</p><p style="font-size:14px;color:red;">補充：負值(除溫度外)表示該時刻因故無資料；溫度<-90表示該時刻因故無資料</p><p>資料來源：<a href="http://opendata.cwb.gov.tw/index">交通部中央氣象局-開放資料平臺</a></p>');break;
+		}
+                    this.bindPopup(popup_json_CWB); //show popup information
+					//this.bindPopup(feature.properties.CNname +"("+feature.properties.Latitude+','+feature.properties.Longitude+')' + '<br/>' + feature.properties.SID+feature.properties.DataType_EN).openPopup();
+ SID_CWB=feature.properties.SID;
+
+ //document.getElementById("show_location").innerHTML = feature.properties.SID;  CWB_container_WIND
+  map.on('popupopen', function(e) {
+ //========== tide =========================
+				getAjaxData_cwb_tide(SID_CWB);
+			
+                var cwb_tide_options = {
+                    chart: {
+                        renderTo: 'CWB_container_Tide',
+                        type: 'line'
+                    },
+                    title: {
+                        text: 'CWB OPEN DATA',
+                        x: -20 //center
+                    },
+                    subtitle: {
+                        text: 'TORI',
+                        x: -20
+                    },
+                    xAxis: {
+                        categories: [],
+                        title: {
+                            text: 'Date'
+                        }
+                    },
+                    yAxis: {
+                        title: {
+                            text: 'Tide Hight (cm)'
+                        },
+                        plotLines: [{
+                                value: 0,
+                                width: 1,
+                                color: '#808080'
+                            }]
+                    },
+                    tooltip: {
+                        valueSuffix: 'cm'
+                    },
+                    legend: {
+                        layout: 'vertical',
+                        align: 'right',
+                        verticalAlign: 'middle',
+                        borderWidth: 0
+                    },
+                    series: []
+                };
+				function getAjaxData_cwb_tide(id) {
+                $.getJSON("CWB_Tide_Data.php", {id: id}, function(json) {
+                    cwb_tide_options.xAxis.categories = json[0]['data']; //xAxis: {categories: []}
+                    cwb_tide_options.series[0] = json[1];
+					chart = new Highcharts.Chart(cwb_tide_options);
+                });
+				}
+ //---------------------- end CWB_TIDE -------------------------------
+ //======================= CWB_SST ==================
+				getAjaxData_cwb_SST(SID_CWB);
+                var sst_options = {
+                    chart: {
+                        renderTo: 'CWB_container_SST',
+                        type: 'line'
+                    },
+                    title: {
+                        text: 'CWB OPEN DATA',
+                        x: -20 //center
+                    },
+                    subtitle: {
+                        text: 'TORI',
+                        x: -20
+                    },
+                    xAxis: {
+                        categories: [],
+                        title: {
+                            text: 'Date'
+                        }
+                    },
+                    yAxis: {
+                        title: {
+                            text: 'SST ( °C)'
+                        },
+                        plotLines: [{
+                                value: 0,
+                                width: 1,
+                                color: '#808080'
+                            }]
+                    },
+                    tooltip: {
+                        valueSuffix: '°C'
+                    },
+                    legend: {
+                        layout: 'vertical',
+                        align: 'right',
+                        verticalAlign: 'middle',
+                        borderWidth: 0
+                    },
+                    series: []
+                };
+				function getAjaxData_cwb_SST(id) {
+                $.getJSON("CWB_sst_data.php", {id: id}, function(json) {
+                    sst_options.xAxis.categories = json[0]['data']; //xAxis: {categories: []}
+                    sst_options.series[0] = json[1];
+					// options.series[1] = json[2];
+                    chart = new Highcharts.Chart(sst_options);
+                });
+				}			
+
+			//================= end CWB SST====================
+
+			//========================= 3 params =============
+		
+				
+				getAjaxData_cwb_3params(SID_CWB);
+                var params_options = {
+                    chart: {
+                        renderTo: 'container_3params',
+                        type: 'spline',
+						zoomType: 'xy'
+                    },
+                    title: {
+                        text: 'CWB OPEN DATA',
+                        x: -20 //center
+                    },
+                    subtitle: {
+                        text: 'TORI',
+                        x: -20
+                    },
+                    xAxis: {
+                        categories: [],
+                        title: {
+                            text: 'Date'
+                        }
+						
+                    },
+                    yAxis:  [{ // Primary yAxis
+
+       
+        title: {
+            text: 'Pressure (hPa)',
+            style: {
+                color: Highcharts.getOptions().colors[0]
+            }
+        },
+		 labels: {
+            format: '{value} hPa',
+            style: {
+                color: Highcharts.getOptions().colors[0]
+            }
+        }
+		,
+		min:990,
+		max:1030,tickInterval:5
+		
+		
+		
+        
+
+    }, { // Secondary yAxis
+        gridLineWidth: 0,
+        title: {
+            text: 'Tair (°C)',
+            style: {
+                color: Highcharts.getOptions().colors[1]
+            }
+        },
+        labels: {
+            format: '{value} °C',
+            style: {
+                color: Highcharts.getOptions().colors[1]
+            }
+        },opposite: true
+		//,
+		//max:40,
+		//min:0,
+		//tickInterval:5
+
+    }, { // third yAxis
+	
+	
+	
+	//
+        gridLineWidth: 0,
+        title: {
+            text: 'SST',
+            style: {
+                color: Highcharts.getOptions().colors[2]
+            }
+        },
+        labels: {
+            format: '{value} °C', 
+            style: {
+                color: Highcharts.getOptions().colors[2]
+            }
+        },
+		opposite: true//,max:40,min:0,tickInterval:2
+
+    }],
+                    tooltip: {
+					
+					pointFormat: '<span style="color:{series.color}">{series.name}</span>: <b>{point.y}</b> <br/>',
+                    valueDecimals: 2,
+
+                
+					
+					 shared: true
+						 
+                    },
+                    legend: {
+						layout: 'vertical',
+						align: 'left',
+						x: 80,
+						verticalAlign: 'top',
+						y: 15,
+						floating: true,
+						backgroundColor: (Highcharts.theme && Highcharts.theme.legendBackgroundColor) || '#FFFFFF'
+                    },
+                    series: []
+                };
+				function getAjaxData_cwb_3params(id) {
+                $.getJSON("CWB_3params_series_data.php", {id: id}, function(json) {
+                    params_options.xAxis.categories = json[0]['data']; //xAxis: {categories: []}
+                    params_options.series[0] = json[1];//pressure
+					params_options.series[1] = json[2];//Tair
+					params_options.series[2] = json[3];//sst
+					chart = new Highcharts.Chart(params_options);
+                });
+				}
+            //===================end 3 params =========================
+			//============  CWB wave ==================
+				
+
+var waveDirectionJSON, waveSpeedJSON, waveDataJSON,recDateJSON,dateStr;
+
+    waveDataJSON = [];
+var id = SID_CWB;
+var xmlhttp = new XMLHttpRequest();
+
+xmlhttp.onreadystatechange = function() {
+    if (this.readyState == 4 && this.status == 200) {
+
+      var myObj = JSON.parse(this.responseText);
+		waveDirectionJSON=myObj[0].data;
+		waveSpeedJSON=myObj[1].data; //Heigh
+		recDateJSON=myObj[2].data;
+    }
+	
+	    for (i = 0; i < waveDirectionJSON.length; i++) {
+        waveDataJSON.push([waveDirectionJSON[i], waveSpeedJSON[i]]);
+
+    }
+	dateStr=recDateJSON[waveDirectionJSON.length-1]+"~"+recDateJSON[0];
+	
+	var categories = ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW'];
+    $('#CWB_container_WAVE').highcharts({
+        series: [{
+			name:"wave",
+            data: waveDataJSON
+        }],
+        chart: {
+            polar: true,
+            type: 'column'
+        },
+        title: {
+            text: 'wave Direction'+"<br/>"+dateStr
+        },
+        pane: {
+            size: '85%'
+        },
+        legend: {
+            align: 'right',
+            verticalAlign: 'top',
+            y: 100,
+            layout: 'vertical'
+        },
+        xAxis: {
+            min: 0,
+            max: 360,
+            type: "",
+            tickInterval: 22.5,
+            tickmarkPlacement: 'on',
+            labels: {
+                formatter: function () {
+                    return categories[this.value / 22.5] + '°';
+                }
+            }
+        },
+        yAxis: {
+            min: 0,
+            endOnTick: false,
+            showLastLabel: true,
+            title: {
+                text: 'Frequency (%)'
+            },
+            labels: {
+                formatter: function () {
+                    return this.value + '%';
+                }
+            },
+            reversedStacks: false
+        },
+        tooltip: {
+			pointFormat: '<span style="color:{series.color}">{series.name}</span>: <b>{point.y}</b> <br/>Direction：{point.x} °<br/>',
+            valueSuffix: 'cm/s'
+        },
+        plotOptions: {
+            series: {
+                stacking: 'normal',
+                shadow: false,
+                groupPadding: 0,
+                pointPlacement: 'on'
+            }
+        }
+    });
+	
+	
+	
+};
+xmlhttp.open("GET","CWB_wave_data.php?id=" +id,true);
+xmlhttp.send();
+//================= end CWB_WAVE==============================
+//============  wind ==================
+	
+var windDirectionJSON, windSpeedJSON, windDataJSON,recDateJSON,dateStr;
+
+    windDataJSON = [];
+
+var windxmlhttp = new XMLHttpRequest();
+
+windxmlhttp.onreadystatechange = function() {
+    if (this.readyState == 4 && this.status == 200) {
+
+      var myObj = JSON.parse(this.responseText);
+		windDirectionJSON=myObj[0].data;
+		windSpeedJSON=myObj[1].data;
+		recDateJSON=myObj[2].data;
+    }
+	
+	    for (i = 0; i < windDirectionJSON.length; i++) {
+        windDataJSON.push([windDirectionJSON[i], windSpeedJSON[i]]);
+    }
+	dateStr=recDateJSON[windDirectionJSON.length-1]+"~"+recDateJSON[0];
+	
+	var categories = ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW'];
+    $('#CWB_container_WIND').highcharts({
+        series: [{
+			name:"Wind",
+            data: windDataJSON
+        }],
+        chart: {
+            polar: true,
+            type: 'column'
+        },
+        title: {
+            text: 'Wind Direction'+"<br/>"+dateStr
+        },
+        pane: {
+            size: '85%'
+        },
+        legend: {
+            align: 'right',
+            verticalAlign: 'top',
+            y: 100,
+            layout: 'vertical'
+        },
+        xAxis: {
+            min: 0,
+            max: 360,
+            type: "",
+            tickInterval: 22.5,
+            tickmarkPlacement: 'on',
+            labels: {
+                formatter: function () {
+                    return categories[this.value / 22.5] + '°';
+                }
+            }
+        },
+        yAxis: {
+            min: 0,
+            endOnTick: false,
+            showLastLabel: true,
+            title: {
+                text: 'Frequency (%)'
+            },
+            labels: {
+                formatter: function () {
+                    return this.value + '%';
+                }
+            },
+            reversedStacks: false
+        },
+        tooltip: {
+			pointFormat: '<span style="color:{series.color}">{series.name}</span>: <b>{point.y}</b> <br/>Direction：{point.x} °<br/>',
+            valueSuffix: 'cm/s'
+        },
+        plotOptions: {
+            series: {
+                stacking: 'normal',
+                shadow: false,
+                groupPadding: 0,
+                pointPlacement: 'on'
+            }
+        }
+    });
+	
+	
+	
+};
+
+
+windxmlhttp.open("GET","CWB_Wind_Data.php?id=" +SID_CWB,true);
+windxmlhttp.send();		
+//=================== end CWB Wind =======================
+
+   });//end map.on
+ //=====================================================	
+	map.on('popupclose', function(e){
+      $('#CWB_container_SST').html("Loading...");
+	  $('#CWB_container_Tide').html("Loading...");
+	 $('#container_3params').html("Loading...");
+	  $('#CWB_container_WAVE').html("Loading..."); 
+	  $('#CWB_container_WIND').html("Loading...");
+    });		
+ 
+}); //end L.marker.on('mouseover')
+	//marker.bindPopup(feature.properties.CNname +"("+feature.properties.Latitude+','+feature.properties.Longitude+')' + '<br/>' + feature.properties.SID+feature.properties.DataType_EN);
+  return marker; 
+	
+    }
+  }  );//.addTo(map);不事先加入 initial display
+ var clusters_CWB = L.markerClusterGroup();
+clusters_CWB.addLayer(rodents_cwb);
+ controlLayers.addOverlay(clusters_CWB, 'CWB_Stations');
+ //---------------------------------------------------------------------------
+ //---------------- // toggle-on toggle-off
+  
+ var toggle_cwb = L.easyButton({
+  states: [{
+    stateName: 'add-cwb-markers',
+    icon: 'fa-map-marker fa-2x',
+    title: 'CWB Station',
+    onClick: function(control) {
+
+	  map.setView([22.993013, 120.233937],8);
+	  map.addLayer(clusters_CWB);
+      control.state('remove-cwb-markers');
+    }
+  }, {
+    icon: 'fa-undo fa-2x',
+    stateName: 'remove-cwb-markers',
+    onClick: function(control) {
+		map.setView([22.993013, 120.233937],8);
+		map.removeLayer(clusters_CWB);
+      //map.removeLayer(rodents); //若使用clusters就需要使用markerClusterGroup;一開始不顯示
+      control.state('add-cwb-markers');
+    },
+    title: 'remove CWB Station'
+  }]
+});
+toggle_cwb.addTo(map);
+ //----------------  
+});
+
+// ========= end plot maker from remote database IHMT and plot them on the map ===========================
+
+//=====================
+
 	L.control.scale(baseMaps).addTo(map);
 L.control.polylineMeasure(baseMaps).addTo(map);  	
 
-
+	
 //=================== insert watermark 浮水印===========================
 L.Control.Watermark = L.Control.extend({
     onAdd: function(map) {
@@ -749,9 +1249,10 @@ L.control.watermark = function(opts) {
 
 L.control.watermark({ position: 'bottomright' }).addTo(map);
 
-//================ image overlay ====================
+//================ image overlay ===============================
+
 var imageUrl = 'images/201612_201702.png',
-    imageBounds = [[-90, -180], [90, 180]],
+    imageBounds = [[-89, 180], [89, -180]],
 	image_options = { opacity: 0.4 };
 	
 var world_img=L.imageOverlay(imageUrl, imageBounds,image_options);//.addTo(map);不預先加入display
@@ -765,7 +1266,7 @@ $("#Off_image").click(function() {
             map.removeLayer(world_img)
         }); 
 
-//---------------- using easy button   ---------------
+//---------------- image overlay using easy button   ---------------
  var add_image = L.easyButton({
   states: [{
     stateName: 'add-image',
@@ -787,13 +1288,15 @@ $("#Off_image").click(function() {
 });
 add_image.addTo(map);
  //-----------
+		
+//===============================================
 
 
 //================= testing easy button 
 var stateChangingButton = L.easyButton({
     states: [{
             stateName: 'zoom-to-Penghu',        // name the state
-            icon:      'fa-tree',               // and define its properties
+            icon:      'fa-tree fa-2x',               // and define its properties
             title:     'zoom to a Penghu',      // like its title
             onClick: function(btn, map) {       // and its callback
                 map.setView([23.5624, 119.57521 ],10);
@@ -801,7 +1304,7 @@ var stateChangingButton = L.easyButton({
             }
         }, {
             stateName: 'zoom-to-orchard-island',
-            icon:      'fa-university',
+            icon:      'fa-university fa-2x',
             title:     'zoom to a orchard',
             onClick: function(btn, map) {
                 map.setView([22.04617, 121.54314],12);
@@ -811,18 +1314,8 @@ var stateChangingButton = L.easyButton({
 });
 
 stateChangingButton.addTo(map);
-//=============================================
-/* 
 
-        L.easyButton('fa-pencil', function(){
-        classes.addLayer({
-            click: onClick
-        });
-    }).addTo(map);
-
-    function onClick(e) {
-        map.removeLayer(classes);
-    } */
+	
   </script>
 
 </body>
