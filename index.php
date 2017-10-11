@@ -128,12 +128,20 @@ var Esri_OceanBasemap = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest
 	crs:L.CRS.EPSG4326,
 	maxZoom: 18
 });
+//============== WMS ===============
+var wms_geoserver = L.tileLayer.wms("https://ahocevar.com/geoserver/wms", {
+        'layers': 'ne:NE1_HR_LC_SR_W_DR',
+        format: 'image/png',
+		crs:L.CRS.EPSG4326,
+        attribution: "© IDEIB"
+});
 //========== 將所有map放入同一個控制項內
 var baseMaps = {
     "Esri_OceanBasemap": Esri_OceanBasemap,
 	"Esri_WorldImagery": Esri_WorldImagery,
 	"Esri_WorldStreetMap": Esri_WorldStreetMap,
-	"OpenStreetMap": OpenStreetMap
+	"OpenStreetMap": OpenStreetMap,
+	"wms_geoserver":wms_geoserver
 };
 //============== Setting map basic parameters include(points of center ,initial zoom size,initial layer map)==============
 
@@ -1252,7 +1260,7 @@ L.control.watermark({ position: 'bottomright' }).addTo(map);
 //================ image overlay ===============================
 
 var imageUrl = 'images/201612_201702.png',
-    imageBounds = [[-89, 180], [89, -180]],
+    imageBounds = [[-90, 180], [90, -180]],
 	image_options = { opacity: 0.4 };
 	
 var world_img=L.imageOverlay(imageUrl, imageBounds,image_options);//.addTo(map);不預先加入display
