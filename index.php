@@ -145,8 +145,8 @@ var baseMaps = {
 };
 //============== Setting map basic parameters include(points of center ,initial zoom size,initial layer map)==============
 
-	    var map = L.map('map', {
-	
+var map = L.map('map', {
+	crs:L.CRS.EPSG4326,
     center: [22.993013, 120.233937],
     zoom: 10,
     layers: [Esri_WorldImagery] //setting initial map layer
